@@ -1,5 +1,4 @@
 #include <pebble.h>
-#include "classy_jake.c"
 #include "main.h"
 #include "weather_window.h"
 #include "steps_window.h"
@@ -8,113 +7,50 @@
 static Window *s_main_window;
 static TextLayer *s_layer1, *s_layer2;
 static GFont s_font, s_small_font, s_small_font_bold;
-// static ActionBarLayer *s_action_bar;
+static ActionBarLayer *s_action_bar;
 static BitmapLayer *s_bitmap_layer;
-static GBitmap *s_select_bitmap, *s_bitmap;
+static GBitmap *s_up_bitmap, *s_down_bitmap, *s_bitmap;
 static TextLayer *s_city_layer, *s_temp_layer, *s_summary_layer, *s_behind_action_bar;
-// static AppTimer *s_timer;
+static AppTimer *s_timer;
 
-// static void up_click() {
-//   show_steps_window();
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather up_click");
-// }
+static void up_click() {
+  show_steps_window();
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather up_click");
+}
 
-// static void select_click() {
-// //   show_steps_window();
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather select_click");
-// }
-
-// static void down_click() {
-//   show_clock_window();
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather down_click");
-// }
+static void down_click() {
+  show_clock_window();
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather down_click");
+}
 
 static void go_home() {
   show_clock_window();
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather go_home");
 }
 
-// static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-//   app_timer_register(300, up_click, NULL); 
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+  app_timer_register(300, up_click, NULL); 
 //   if(s_timer) { app_timer_cancel(s_timer); }
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather up_click_handler");
-// }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather up_click_handler");
+}
 
-// static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
-//   app_timer_register(300, select_click, NULL); 
+static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  app_timer_register(300, down_click, NULL);
 //   if(s_timer) { app_timer_cancel(s_timer); }
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather select_click_handler");
-// }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather down_click_handler");
+}
 
-// static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-//   app_timer_register(300, down_click, NULL);
-//   if(s_timer) { app_timer_cancel(s_timer); }
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather down_click_handler");
-// }
-
-// static void click_config_provider(void *context) {
-//   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
-//   window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
-//   window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather click_config_provider");
-// }
+static void click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather click_config_provider");
+}
 
 static void load_icons(Window *window) {
-  Layer *window_layer = window_get_root_layer(window);
   
   // up is health icon
   s_up_bitmap = gbitmap_create_with_resource(RESOURCE_ID_SHOE_WHITE_ICON);
-    
-  // select is weather icon
-  switch(icon) {
-    case 0:
-      // clear-day
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_CLEAR_SKY_DAY_WHITE_ICON);  
-      s_bitmap = gbitmap_create_with_resource(RESOURCE_ID_CLEAR_SKY_DAY_WHITE_ICON);  
-      bitmap_layer_set_bitmap(s_bitmap_layer, s_bitmap); 
-      layer_add_child(window_layer, bitmap_layer_get_layer(s_bitmap_layer));  
-      break;
-    case 1:
-      // clear-night
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_CLEAR_SKY_NIGHT_WHITE_ICON);  
-      break;
-    case 2:
-      // rain
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_RAIN_WHITE_ICON);  
-      break;
-    case 3:
-      // snow
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_SNOW_WHITE_ICON);  
-      break;
-    case 4:
-      // sleet
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_SLEET_WHITE_ICON);  
-      break;
-    case 5:
-      //wind
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_WIND_WHITE_ICON);  
-      break;
-    case 6:
-      // fog
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_FOG_WHITE_ICON);  
-      break;
-    case 7:
-      // cloudy
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_CLOUDY_WHITE_ICON);  
-      break;
-    case 8:
-      // partly-cloudy-day
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_PARTLY_CLOUDY_DAY_WHITE_ICON);  
-      s_bitmap = gbitmap_create_with_resource(RESOURCE_ID_PARTLY_CLOUDY_DAY_WHITE_ICON);  
-      bitmap_layer_set_bitmap(s_bitmap_layer, s_bitmap); 
-      layer_add_child(window_layer, bitmap_layer_get_layer(s_bitmap_layer));  
-      break;
-    case 9:
-      // partly-cloudy-night
-      s_select_bitmap = gbitmap_create_with_resource(RESOURCE_ID_PARTLY_CLOUDY_NIGHT_WHITE_ICON);  
-      break;
-  }
-    
+        
   // down is clock icon
   s_down_bitmap = gbitmap_create_with_resource(RESOURCE_ID_CLOCK_WHITE_ICON);
   
@@ -123,12 +59,10 @@ static void load_icons(Window *window) {
   
   // Set the icons
   action_bar_layer_set_icon(s_action_bar, BUTTON_ID_UP, s_up_bitmap);
-  action_bar_layer_set_icon(s_action_bar, BUTTON_ID_SELECT, s_select_bitmap);
   action_bar_layer_set_icon(s_action_bar, BUTTON_ID_DOWN, s_down_bitmap);
   
   // animate button press
   action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveDown);
-  action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveRight);
   action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveUp);  
   
   // Add to Window
@@ -166,14 +100,19 @@ static void window_load(Window *window) {
   text_layer_set_font(s_city_layer, s_font);
   layer_add_child(window_layer, text_layer_get_layer(s_city_layer));    
   
+  // set city, already obtained from clock_window.c weather call to app.js
+  text_layer_set_text(s_city_layer, city_layer_buf); 
+  
   ///////////////////////////////////////////
   // create text layer for the temperature //
   ///////////////////////////////////////////
   s_temp_layer = text_layer_create(GRect(0, 22, bounds.size.w-ACTION_BAR_WIDTH, 16));
   text_layer_set_text_alignment(s_temp_layer, GTextAlignmentCenter);
   text_layer_set_font(s_temp_layer, s_small_font);
-  text_layer_set_text(s_temp_layer, "Fetching...");
   layer_add_child(window_layer, text_layer_get_layer(s_temp_layer));  
+  
+  // set tempex, already obtained from clock_window.c weather call to app.js
+  text_layer_set_text(s_temp_layer, tempex_layer_buf);
   
   ////////////////
   // icon layer //
@@ -221,128 +160,42 @@ static void window_load(Window *window) {
       break;
   }
   
+  // draw weather icon
   s_bitmap_layer = bitmap_layer_create(GRect(0, 38, bounds.size.w-ACTION_BAR_WIDTH, 40));
   bitmap_layer_set_compositing_mode(s_bitmap_layer, GCompOpSet);
   bitmap_layer_set_bitmap(s_bitmap_layer, s_bitmap); 
   layer_add_child(window_layer, bitmap_layer_get_layer(s_bitmap_layer));  
   
-  ///////////////////////////////////////
-  // create text layer for the summary //
-  ///////////////////////////////////////
+  // create text layer for the summary
   s_summary_layer = text_layer_create(GRect(0, 78, bounds.size.w-ACTION_BAR_WIDTH, 90));
   text_layer_set_text_alignment(s_summary_layer, GTextAlignmentCenter);
   text_layer_set_font(s_summary_layer, s_small_font);
   layer_add_child(window_layer, text_layer_get_layer(s_summary_layer));    
   
-//   load_icons(window);
+  // set summary, already obtained from clock_window.c weather call to app.js
+  text_layer_set_text(s_summary_layer, summary_layer_buf);
   
-  s_timer = app_timer_register(10000, go_home, NULL); 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather s_timer created");
+  // load icons
+  load_icons(window);
+   
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather window_load");
 }
 
-static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  // Begin dictionary
-  DictionaryIterator *iter;
-  app_message_outbox_begin(&iter);
-
-  // Add a key-value pair
-  dict_write_uint8(iter, 0, 0);
-
-  // Send the message!
-  app_message_outbox_send();
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather tick_handler");
-}
-
 static void window_unload(Window *window) {
+  app_timer_cancel(s_timer);
   text_layer_destroy(s_layer1);
   text_layer_destroy(s_layer2);
   action_bar_layer_destroy(s_action_bar);
   gbitmap_destroy(s_up_bitmap);
   gbitmap_destroy(s_down_bitmap);  
+  gbitmap_destroy(s_bitmap); 
+  text_layer_destroy(s_city_layer);
+  text_layer_destroy(s_temp_layer);
+  text_layer_destroy(s_summary_layer);
+  text_layer_destroy(s_behind_action_bar);
   window_destroy(s_main_window);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather window_unload");  
 }
-
-// // for weather calls
-// static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-//   // Store incoming information
-//   static char city_buf[32];
-//   static char summary_buf[128];
-//   static char tempex_buf[32];
-//   static char icon_buf[32];
-  
-//   static char city_layer_buf[32];
-//   static char summary_layer_buf[128]; 
-//   static char tempex_layer_buf[32];
-//   static char icon_layer_buf[32];
-
-//   // Read tuples for data
-//   Tuple *city_tuple = dict_find(iterator, KEY_CITY);
-//   Tuple *summary_tuple = dict_find(iterator, KEY_SUMMARY);
-//   Tuple *tempex_tuple = dict_find(iterator, KEY_TEMP_EXTENDED);
-//   Tuple *icon_tuple = dict_find(iterator, KEY_ICON);
-
-//   // If all data is available, use it
-//   if(city_tuple && summary_tuple && tempex_tuple && icon_tuple) {
-    
-//     // city
-//     snprintf(city_buf, sizeof(city_buf), "%s", city_tuple->value->cstring);
-//     snprintf(city_layer_buf, sizeof(city_layer_buf), "%s", city_buf);
-//     text_layer_set_text(s_city_layer, city_layer_buf);
-    
-//     // temp
-//     snprintf(tempex_buf, sizeof(tempex_buf), "%s", tempex_tuple->value->cstring);
-//     snprintf(tempex_layer_buf, sizeof(tempex_layer_buf), "%s", tempex_buf);
-//     text_layer_set_text(s_temp_layer, tempex_layer_buf);
-
-//     // summary
-//     snprintf(summary_buf, sizeof(summary_buf), "%s", summary_tuple->value->cstring);
-//     snprintf(summary_layer_buf, sizeof(summary_layer_buf), "%s", summary_buf);
-//     text_layer_set_text(s_summary_layer, summary_layer_buf);
-    
-//     // icon
-//     snprintf(icon_buf, sizeof(icon_buf), "%s", icon_tuple->value->cstring);
-//     snprintf(icon_layer_buf, sizeof(icon_layer_buf), "%s", icon_buf);
-    
-//     if(strcmp(icon_layer_buf, "clear-day")==0) {
-//       icon = 0;
-//     } else if(strcmp(icon_layer_buf, "clear-night")==0) {
-//       icon = 1;
-//     }else if(strcmp(icon_layer_buf, "rain")==0) {
-//       icon = 2;
-//     } else if(strcmp(icon_layer_buf, "snow")==0) {
-//       icon = 3;
-//     } else if(strcmp(icon_layer_buf, "sleet")==0) {
-//       icon = 4;
-//     } else if(strcmp(icon_layer_buf, "wind")==0) {
-//       icon = 5;
-//     } else if(strcmp(icon_layer_buf, "fog")==0) {
-//       icon = 6;
-//     } else if(strcmp(icon_layer_buf, "cloudy")==0) {
-//       icon = 7;
-//     } else if(strcmp(icon_layer_buf, "partly-cloudy-day")==0) {
-//       icon = 8;
-//     } else if(strcmp(icon_layer_buf, "partly-cloudy-night")==0) {
-//       icon = 9;
-//     }
-//   }
-//   load_icons(s_main_window);
-//   APP_LOG(APP_LOG_LEVEL_INFO, "Clock inbox_received_callback");
-// }
-
-
-// static void inbox_dropped_callback(AppMessageResult reason, void *context) {
-//   APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
-// }
-
-// static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
-//   APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
-// }
-
-// static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
-//   APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
-// }
 
 void show_weather_window(void) {
   s_main_window = window_create();
@@ -351,20 +204,10 @@ void show_weather_window(void) {
     .unload = window_unload
   });
   window_stack_push(s_main_window, true);
-    
-  // register with TickTimerService
-  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler); 
   
-//   // Register weather callbacks
-//   app_message_register_inbox_received(inbox_received_callback);
-//   app_message_register_inbox_dropped(inbox_dropped_callback);
-//   app_message_register_outbox_failed(outbox_failed_callback);
-//   app_message_register_outbox_sent(outbox_sent_callback);  
-  
-//   // Open AppMessage for weather callbacks
-//   const int inbox_size = 256;
-//   const int outbox_size = 256;
-//   app_message_open(inbox_size, outbox_size);   
+  // start timer
+  s_timer = app_timer_register(20000, go_home, NULL);  
+      
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Weather show_weather_window");
 }
 

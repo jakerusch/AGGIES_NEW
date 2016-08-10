@@ -1,49 +1,50 @@
 #include <pebble.h>
-#include "classy_jake.c"
 #include "main.h"
 #include "weather_window.h"
 #include "steps_window.h"
 #include "clock_window.h"
 
 static Window *s_main_window;
-static TextLayer *s_layer, *s_behind_action_bar;
+static TextLayer *s_health_layer, *s_behind_action_bar;
 static GFont s_font;
-// static ActionBarLayer *s_action_bar;
-// static GBitmap *s_up_bitmap, *s_down_bitmap;
-// static AppTimer *s_timer;
+static ActionBarLayer *s_action_bar;
+static GBitmap *s_up_bitmap, *s_down_bitmap;
+static AppTimer *s_timer;
 
-// static void load_weather() {
-//   show_weather_window();
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps load_weather");
-// }
+static void load_weather() {
+  show_weather_window();
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps load_weather");
+}
 
-// static void load_clock() {
-//   show_clock_window();
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps load_clock");
-// }
+static void load_clock() {
+  show_clock_window();
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps load_clock");
+}
 
 static void go_home() {
   show_clock_window();
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps go_home");
 }
 
-// static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
-//   app_timer_register(300, load_clock, NULL);
+static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps up_click_handler start");
+  app_timer_register(300, load_clock, NULL);
 //   if(s_timer) { app_timer_cancel(s_timer); }
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps up_click_handler");
-// }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps up_click_handler end");
+}
 
-// static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
-//   app_timer_register(300, load_weather, NULL);
+static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps down_click_handler start");
+  app_timer_register(300, load_weather, NULL);
 //   if(s_timer) { app_timer_cancel(s_timer); }
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps down_click_handler");
-// }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps down_click_handler end");
+}
 
-// static void click_config_provider(void *context) {
-//   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
-//   window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
-//   APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps click_config_provider");
-// }
+static void click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps click_config_provider");
+}
 
 static void load_icons(Window *window) {
   // Load icon bitmaps
@@ -134,105 +135,48 @@ static void window_load(Window *window) {
   /////////////////////////////////
   // create text layer for steps //
   /////////////////////////////////
-  s_layer = text_layer_create(GRect(0, 120, bounds.size.w-ACTION_BAR_WIDTH, 30));
-  text_layer_set_background_color(s_layer, GColorClear);
-  text_layer_set_text_color(s_layer, GColorBlack);
-  text_layer_set_text_alignment(s_layer, GTextAlignmentCenter);
-  text_layer_set_font(s_layer, s_font);
-  text_layer_set_text(s_layer, "-");
-  layer_add_child(window_layer, text_layer_get_layer(s_layer));  
+  s_health_layer = text_layer_create(GRect(0, 120, bounds.size.w-ACTION_BAR_WIDTH, 30));
+  text_layer_set_background_color(s_health_layer, GColorClear);
+  text_layer_set_text_color(s_health_layer, GColorBlack);
+  text_layer_set_text_alignment(s_health_layer, GTextAlignmentCenter);
+  text_layer_set_font(s_health_layer, s_font);
+//   text_layer_set_text(s_health_layer, "-");
+  layer_add_child(window_layer, text_layer_get_layer(s_health_layer));  
   
-//   load_icons(window);
-  
-  s_timer = app_timer_register(10000, go_home, NULL); 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps s_timer created");
+  load_icons(window);
+
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps window_load");
 }
 
 // registers health update events
 static void health_handler(HealthEventType event, void *context) {
   if(event==HealthEventMovementUpdate) {
-//     step_count = (double)health_service_sum_today(HealthMetricStepCount);
     
     // write to char_current_steps variable
     static char health_buf[32];
+    static char health_layer_buf[32];
     snprintf(health_buf, sizeof(health_buf), "%d", (int)health_service_sum_today(HealthMetricStepCount));
-    APP_LOG(APP_LOG_LEVEL_INFO, "%d", (int)health_service_sum_today(HealthMetricStepCount));
-//     char_current_steps = health_buf;
+    snprintf(health_layer_buf, sizeof(health_layer_buf), "%s", health_buf);
     
-    // force update to circle
-    text_layer_set_text(s_layer, health_buf);
+    // add text to screen
+    if(s_health_layer) {
+      text_layer_set_text(s_health_layer, health_layer_buf);
+    }
     
     APP_LOG(APP_LOG_LEVEL_INFO, "health_handler completed");
   }
 }
 
 static void window_unload(Window *window) {
+  health_service_events_unsubscribe();
   app_timer_cancel(s_timer);
-  text_layer_destroy(s_layer);
+  text_layer_destroy(s_health_layer);
+  text_layer_destroy(s_behind_action_bar);
   action_bar_layer_destroy(s_action_bar);
   gbitmap_destroy(s_up_bitmap);
   gbitmap_destroy(s_down_bitmap);
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps window_unload");
 }
-
-// // for weather calls
-// static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-//   // Store incoming information
-//   static char icon_buf[32];
-  
-//   static char icon_layer_buf[32];
-
-//   // Read tuples for data
-//   Tuple *icon_tuple = dict_find(iterator, KEY_ICON);  
-
-//   // If all data is available, use it
-//   if(icon_tuple) {
-//     // icon
-//     snprintf(icon_buf, sizeof(icon_buf), "%s", icon_tuple->value->cstring);
-//     snprintf(icon_layer_buf, sizeof(icon_layer_buf), "%s", icon_buf);
-    
-//     // populate icon variable
-//     if(strcmp(icon_layer_buf, "clear-day")==0) {
-//       icon = 0;
-//     } else if(strcmp(icon_layer_buf, "clear-night")==0) {
-//       icon = 1;
-//     }else if(strcmp(icon_layer_buf, "rain")==0) {
-//       icon = 2;
-//     } else if(strcmp(icon_layer_buf, "snow")==0) {
-//       icon = 3;
-//     } else if(strcmp(icon_layer_buf, "sleet")==0) {
-//       icon = 4;
-//     } else if(strcmp(icon_layer_buf, "wind")==0) {
-//       icon = 5;
-//     } else if(strcmp(icon_layer_buf, "fog")==0) {
-//       icon = 6;
-//     } else if(strcmp(icon_layer_buf, "cloudy")==0) {
-//       icon = 7;
-//     } else if(strcmp(icon_layer_buf, "partly-cloudy-day")==0) {
-//       icon = 8;
-//     } else if(strcmp(icon_layer_buf, "partly-cloudy-night")==0) {
-//       icon = 9;
-//     }
-//   }
-  
-//   // load default icon
-//   load_icons(s_main_window);
-  
-//   APP_LOG(APP_LOG_LEVEL_INFO, "Clock inbox_received_callback");
-// }
-
-// static void inbox_dropped_callback(AppMessageResult reason, void *context) {
-//   APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped!");
-// }
-
-// static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
-//   APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
-// }
-
-// static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
-//   APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
-// }
 
 void show_steps_window(void) {
   s_main_window = window_create();
@@ -242,21 +186,14 @@ void show_steps_window(void) {
   });
   window_stack_push(s_main_window, true);
   
+  // start timer
+  s_timer = app_timer_register(20000, go_home, NULL);  
+  
   // subscribe to health events 
   health_service_events_subscribe(health_handler, NULL); 
   // force initial update
-  health_handler(HealthEventMovementUpdate, NULL); 
+  health_handler(HealthEventMovementUpdate, NULL);   
   
-//   // Register weather callbacks
-//   app_message_register_inbox_received(inbox_received_callback);
-//   app_message_register_inbox_dropped(inbox_dropped_callback);
-//   app_message_register_outbox_failed(outbox_failed_callback);
-//   app_message_register_outbox_sent(outbox_sent_callback);  
-  
-//   // Open AppMessage for weather callbacks
-//   const int inbox_size = 256;
-//   const int outbox_size = 256;
-//   app_message_open(inbox_size, outbox_size);   
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Steps show_steps_window");
 }
 
